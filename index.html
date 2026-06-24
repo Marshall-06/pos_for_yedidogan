@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="tk">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Label Zawod — Ammar Sistemasy</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Condensed:wght@300;400;600;700&family=Roboto:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="mode-guest">
+
+  <!-- ════════════════════════════════════════════════════
+     GUEST ÝOKARKY PANEL — login etmezden harytlar görünýär
+     ════════════════════════════════════════════════════ -->
+  <header class="guest-bar" id="guest-bar">
+    <div class="nav-brand">⬡ Yedidogan Zawod</div>
+    <div class="guest-title">Harytlar Bazasy</div>
+    <div class="guest-auth" id="guest-auth">
+      <button class="btn btn-add" onclick="openLogin()">Giriş</button>
+    </div>
+  </header>
+
+  <!-- ════════════════════════════════════════════════════
+     APP LAÝOUT — Sidebar (admin) + Esasy mazmun
+     ════════════════════════════════════════════════════ -->
+  <div class="layout" id="layout">
+
+    <!-- ── SIDEBAR (diňe admin görýär) ── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-brand">⬡ Yedidogan Zawod</div>
+      <div class="sb-role">Admin Panel</div>
+      <nav class="sb-nav">
+        <button class="sb-link" data-page="inventory" onclick="navigate('inventory')"><span>📦</span> Harytlar
+          Bazasy</button>
+        <button class="sb-link" data-page="invoice" onclick="navigate('invoice')"><span>🧾</span> Faktura
+          Düzmek</button>
+        <button class="sb-link" data-page="admin" onclick="navigate('admin')"><span>👤</span> Ulanyjylar</button>
+      </nav>
+      <div class="sb-foot">
+        <div class="sb-user" id="sb-user-name">—</div>
+        <button class="sb-logout" onclick="logout()">⎋ Çykmak</button>
+      </div>
+    </aside>
+
+    <!-- ── ESASY MAZMUN ── -->
+    <main class="content" id="content">
+
+      <!-- ════════════════════════════════════════════════════
+     SAHYPA 1 — HARYTLAR BAZASY (Inventory Management)
+     ════════════════════════════════════════════════════ -->
+      <section class="page" id="page-inventory">
+
+        <div class="page-head">
+          <h1 class="page-title">Harytlar Bazasy</h1>
+          <!-- <p class="page-sub">Harytlary goşuň, üýtgediň we barkodlaryny görüň. Ähli maglumat brauzerde saklanýar.</p> -->
+        </div>
+
+        <!-- ── Täze haryt goşmak formasy (diňe admin) ── -->
+        <div class="card inv-form-card admin-only">
+          <div class="card-head">
+            <h2 id="inv-form-title">＋ Täze haryt goş</h2>
+            <button class="btn btn-ghost" id="inv-cancel-edit" style="display:none" onclick="cancelEditItem()">✕
+              Ýatyr</button>
+          </div>
+          <div class="inv-form">
+            <div class="ff">
+              <label>PLU</label>
+              <input id="if-plu" type="text" placeholder="21025" />
+            </div>
+            <div class="ff grow">
+              <label>Harydyň ady</label>
+              <input id="if-name" type="text" placeholder="Duýgy_Direg zefir 17gr" />
+            </div>
+            <div class="ff">
+              <label>Brutto (g)</label>
+              <input id="if-gram" type="number" min="0" step="1" placeholder="214" />
+            </div>
+            <div class="ff">
+              <label>Ini / Width (mm)</label>
+              <input id="if-mm" type="number" min="0" step="1" placeholder="140" />
+            </div>
+            <div class="ff">
+              <label>Kod</label>
+              <input id="if-code" type="text" placeholder="322" />
+            </div>
+            <div class="ff">
+              <label>Gilza / Tara (g)</label>
+              <input id="if-tare" type="number" min="0" step="1" placeholder="30" />
+            </div>
+            <div class="ff ff-btn">
+              <button class="btn btn-add" id="if-submit" onclick="submitItemForm()">＋ Baza goş</button>
+            </div>
+          </div>
+          <p class="form-hint">Bellik: Barkod el bilen girizilmeýär — haryt goşulanda PLU esasynda EAN-13 barkod
+            awtomatiki döredilýär we sanawda "Barkody görmek" arkaly görkezilýär.</p>
+        </div>
+
+        <!-- ── Harytlaryň tablisaly sanawy (CRUD) ── -->
+        <div class="card">
+          <div class="card-head">
+            <h2>Bazadaky harytlar (<span id="inv-count">0</span>)</h2>
+            <div class="card-tools admin-only">
+              <button class="btn btn-sm btn-edit" onclick="exportItems()" title="Excel-de açylýan CSV faýl">⬇ Excel-e
+                çykar</button>
+              <button class="btn btn-sm btn-add" onclick="triggerImport()" title="CSV faýldan haryt almak">⬆ Excel-den
+                al</button>
+              <input id="import-file" type="file" accept=".csv,text/csv" style="display:none"
+                onchange="handleImportFile(this)" />
+            </div>
+            <div class="card-search">
+              <input id="inv-search" type="text" placeholder="Gözle: ady, PLU, barkod…" oninput="renderInventory()" />
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table class="inv-table">
+              <thead>
+                <tr>
+                  <th style="width:30px">#</th>
+                  <th>PLU</th>
+                  <th class="tl">Ady</th>
+                  <th>Kod</th>
+                  <th>Brutto (g)</th>
+                  <th>Ini (mm)</th>
+                  <th>Gilza (g)</th>
+                  <th>Barkod</th>
+                  <th style="width:200px">Amallar</th>
+                </tr>
+              </thead>
+              <tbody id="inv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+     SAHYPA 2 — FAKTURA DÜZMEK (Invoice Generator)
+     ════════════════════════════════════════════════════ -->
+      <section class="page admin-only" id="page-invoice" style="display:none">
+
+        <div class="action-bar">
+          <h1>⬡ Label Zawod — Çykyş Fakturasy</h1>
+          <button class="btn btn-add" onclick="openItemPicker()">＋ Haryt goş</button>
+          <button class="btn btn-save" onclick="saveInvoice()">✦ Sakla</button>
+          <button class="btn btn-clear" onclick="clearAll()">✕ Arassala</button>
+          <label class="print-qty-lbl" title="Bir blokda näçe rulon (default 2, çap etmezden öň üýtgedip bolýar)">
+            1 blokda rulon:
+            <input id="print-perblock" type="number" min="1" step="1" value="2" class="print-qty-in" />
+          </label>
+          <button class="btn btn-print" onclick="openPrint()">⎙ Çap et</button>
+        </div>
+
+        <main class="invoice" id="invoice">
+
+          <!-- HEADER -->
+          <header class="inv-header">
+            <div class="org-block">
+              <div class="org-sub">Label önüm zawody · Çykyş resminamasy</div>
+              <div class="org-name" id="org-display">Zawodyň ady</div>
+              <div class="doc-type">Ammar Çykyş Fakturasy / Warehouse Outflow Invoice</div>
+            </div>
+            <div class="stamp-area">
+              <div class="stamp-ring">
+                <div class="stamp-no">FAKTURA №</div>
+                <div class="stamp-num" id="stamp-num">—</div>
+              </div>
+            </div>
+          </header>
+
+          <!-- META -->
+          <section class="inv-meta">
+            <div class="mf">
+              <label class="ml" for="f-num">Faktura №</label>
+              <input class="mi mono" id="f-num" type="text" placeholder="721"
+                oninput="document.getElementById('stamp-num').textContent=this.value||'—'" />
+            </div>
+            <div class="mf grow">
+              <label class="ml" for="f-zawod">Zawod / Gurama</label>
+              <input class="mi" id="f-zawod" type="text" placeholder="Label Zawodynyň ady…"
+                oninput="document.getElementById('org-display').textContent=this.value||'Zawodyň ady'" />
+            </div>
+            <div class="mf grow">
+              <label class="ml" for="f-sklad">Sklad / Alyjy</label>
+              <input class="mi" id="f-sklad" type="text" placeholder="Sklad ady ýa-da belgisi…" />
+            </div>
+            <div class="mf">
+              <label class="ml" for="f-date">Senesi</label>
+              <input class="mi mono" id="f-date" type="date" />
+            </div>
+          </section>
+
+          <!-- BARCODE -->
+          <div class="bc-wrap">
+            <span class="bc-ico">▐║▌║▐▌</span>
+            <label class="bc-lbl" for="bc-in">Barkod:</label>
+            <input class="bc-in" id="bc-in" type="text" placeholder="Skanirläň ýa-da el bilen giriziň…"
+              autocomplete="off" spellcheck="false" />
+            <div class="bc-chips" id="bc-chips" style="display:none">
+              <div class="bc-chip"><span class="bc-chip-l">PLU</span><span class="bc-chip-v" id="bp-plu">—</span></div>
+              <div class="bc-chip"><span class="bc-chip-l">Agram / Net</span><span class="bc-chip-v"
+                  id="bp-net">—</span></div>
+              <div class="bc-chip"><span class="bc-chip-l">Format</span><span class="bc-chip-v" id="bp-fmt">—</span>
+              </div>
+            </div>
+            <span class="bc-flash" id="bc-flash"></span>
+          </div>
+
+          <!-- TABLE -->
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:22px">#</th>
+                  <th>PLU</th>
+                  <th class="tl" style="min-width:120px">Ady (Name)</th>
+                  <th>Kod (Code)</th>
+                  <th>Ini / Width (mm)</th>
+                  <th>Görnüş (Mode)</th>
+                  <th class="tg">Brutto (g)</th>
+                  <th class="tg">Gilza/Tara (g)</th>
+                  <th class="tg">Netto (g)</th>
+                  <th>Self</th>
+                  <th>Label</th>
+                  <th>Sklad (Shop)</th>
+                  <th>Gapdaky haryt (box_qty)</th>
+                  <th style="width:26px"></th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+              <tfoot id="tfoot"></tfoot>
+            </table>
+          </div>
+
+          <div class="add-wrap">
+            <button class="btn-addrow" onclick="openItemPicker()">＋ Täze setir goş</button>
+          </div>
+
+          <!-- SIGNATORIES -->
+          <section class="sigs">
+            <div class="sig-b">
+              <div class="sig-l">Tabşyran (Berýän)</div>
+              <div class="sig-line">
+                <input class="sig-in" id="f-issued" type="text" placeholder="Işgäriň ady, wezipesi…" />
+                <span class="sig-sub">Ady / Goly</span>
+              </div>
+            </div>
+            <div class="sig-b">
+              <div class="sig-l">Kabul eden (Alýan)</div>
+              <div class="sig-line">
+                <input class="sig-in" id="f-recv" type="text" placeholder="Alyjynyň ady…" />
+                <span class="sig-sub">Ady / Goly</span>
+              </div>
+            </div>
+          </section>
+
+          <footer class="inv-foot">
+            <div class="foot-note">Bu resminama label önüm zawodynyň ammar çykyş fakturasydyr. Gol çekilenden soň güýje
+              girýär.</div>
+            <div class="foot-date" id="foot-date">—</div>
+          </footer>
+
+        </main>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+     SAHYPA 3 — ADMIN PANEL (diňe admin) — ulanyjy dolandyryş
+     ════════════════════════════════════════════════════ -->
+      <section class="page admin-only" id="page-admin" style="display:none">
+
+        <div class="page-head">
+          <h1 class="page-title">Admin Panel — Ulanyjylar</h1>
+          <p class="page-sub">Täze ulanyjy goşuň we rollaryny dolandyryň. Diňe admin görýär.</p>
+        </div>
+
+        <!-- ── Täze ulanyjy goşmak ── -->
+        <div class="card">
+          <div class="card-head">
+            <h2>＋ Täze ulanyjy goş</h2>
+          </div>
+          <div class="inv-form">
+            <div class="ff grow">
+              <label>Email</label>
+              <input id="uf-email" type="email" placeholder="ulanyjy@label.tm" />
+            </div>
+            <div class="ff grow">
+              <label>Ady</label>
+              <input id="uf-name" type="text" placeholder="Işgäriň ady" />
+            </div>
+            <div class="ff">
+              <label>Kod</label>
+              <input id="uf-code" type="text" placeholder="1234" />
+            </div>
+            <div class="ff">
+              <label>Rol</label>
+              <select id="uf-role">
+                <option value="user">Ulanyjy (diňe görmek)</option>
+                <option value="admin">Admin (hemme zat)</option>
+              </select>
+            </div>
+            <div class="ff ff-btn">
+              <button class="btn btn-add" onclick="submitUserForm()">＋ Goş</button>
+            </div>
+          </div>
+          <p class="form-hint">Ulanyjy "diňe görmek" rolunda diňe Harytlar Bazasyny görüp bilýär — goşup, üýtgedip ýa-da
+            faktura düzüp bilmeýär.</p>
+        </div>
+
+        <!-- ── Ulanyjylaryň sanawy ── -->
+        <div class="card">
+          <div class="card-head">
+            <h2>Ulanyjylar (<span id="user-count">0</span>)</h2>
+          </div>
+          <div class="tbl-wrap">
+            <table class="inv-table">
+              <thead>
+                <tr>
+                  <th style="width:30px">#</th>
+                  <th class="tl">Email</th>
+                  <th class="tl">Ady</th>
+                  <th>Rol</th>
+                  <th>Kod</th>
+                  <th style="width:110px">Amal</th>
+                </tr>
+              </thead>
+              <tbody id="user-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main><!-- /.content -->
+  </div><!-- /.layout -->
+
+  <!-- ════════ ADMIN GIRIŞ POPUP (email + kod) ════════ -->
+  <div class="modal-overlay" id="login-modal" onclick="if(event.target===this) closeLogin()">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-head">
+        <h2 id="login-title">Giriş</h2>
+        <button class="modal-x" onclick="closeLogin()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-tabs">
+          <button id="tab-login" class="auth-tab active" onclick="setAuthMode('login')">Giriş</button>
+          <button id="tab-register" class="auth-tab" onclick="setAuthMode('register')">Hasaba alyş</button>
+        </div>
+        <div class="auth-field">
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" placeholder="ulanyjy@gmail.tm" autocomplete="username" />
+        </div>
+        <div class="auth-field" id="reg-name-row" style="display:none">
+          <label for="login-name">Ady</label>
+          <input id="login-name" type="text" placeholder="Adyňyz" autocomplete="name" />
+        </div>
+        <div class="auth-field">
+          <label for="login-code">Kod</label>
+          <input id="login-code" type="password" placeholder="••••" autocomplete="current-password" />
+        </div>
+        <div class="auth-error" id="login-error"></div>
+        <button id="auth-submit" class="btn btn-add auth-btn" onclick="submitAuth()">Gir →</button>
+        <div class="auth-hint" id="auth-hint">Hasabyňyz ýok bolsa <b>"Hasaba alyş"</b> bölümine geçiň —
+          bazadaky ilkinji ulanyjy awtomatiki <b>admin</b> bolýar.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ HARYT SAÝLAÝJY POPUP (Faktura sahypasy üçin) ════════ -->
+  <div class="modal-overlay" id="item-modal-overlay" onclick="if(event.target===this) closeItemPicker()">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Bazadan haryt saýla</h2>
+        <button class="modal-x" onclick="closeItemPicker()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-search">
+          <input id="item-search" type="text" placeholder="Gözle: ady, PLU ýa-da barkod…" oninput="renderItemList()" />
+        </div>
+        <div class="item-list" id="item-list"></div>
+        <p class="modal-foot-note">Haryt sanawda ýok bolsa, <b>Harytlar Bazasy</b> sahypasyndan goşuň.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ BARKOD GÖRKEZIJI POPUP ════════ -->
+  <div class="modal-overlay" id="barcode-modal-overlay" onclick="if(event.target===this) closeBarcodeModal()">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-head">
+        <h2 id="bc-modal-title">Barkod</h2>
+        <button class="modal-x" onclick="closeBarcodeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="barcode-modal-body">
+        <div class="bc-label" id="bc-label-print">
+          <div class="bc-label-name" id="bc-label-name">—</div>
+          <div class="bc-svg-wrap" id="bc-svg-wrap"></div>
+          <div class="bc-label-meta" id="bc-label-meta">—</div>
+        </div>
+        <div class="bc-modal-actions">
+          <button class="btn btn-print" onclick="printBarcode()">⎙ Etiketka çap et</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+     ÇAP — öňünden görnüş (gram/kg saýlap, soňra çap edilýär)
+     ════════════════════════════════════════════════════ -->
+  <div class="pf-preview-overlay" id="print-preview" onclick="if(event.target===this) closePrintPreview()">
+    <div class="pf-preview-box">
+      <div class="pf-preview-bar">
+        <span class="pf-preview-title">Faktura — öňünden görnüş</span>
+        <div class="pf-preview-actions">
+          <button class="btn btn-print" onclick="doPrint()">⎙ Çap et</button>
+          <button class="btn btn-ghost" onclick="closePrintPreview()">✕ Ýap</button>
+        </div>
+      </div>
+      <div class="print-forma" id="print-forma">
+        <div class="pf-wrap" id="pf-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Programma kody (aýratyn böleklere bölünen) ── -->
+
+  <script src="js/api.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/invoice.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+
+</html>
